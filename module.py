@@ -21,7 +21,7 @@ def discriminator(image, options, reuse=False, name="discriminator"):
         e3 = instance_norm(conv2d(lrelu(e2), options.gf_dim*4, name='g_e3_conv'), 'g_bn_e3')
         # e3 is (32 x 32 x self.gf_dim*4)
 
-        o1 = conv2d(e3,1,s=1, name= "real_fake_pred")
+        o1 = tf.nn.tanh(conv2d(e3,1,s=1, name= "real_fake_pred")
         #o1 is (32x32x1)
         
         e4 = instance_norm(conv2d(lrelu(e3), options.gf_dim*8, name='g_e4_conv'), 'g_bn_e4')
