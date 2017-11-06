@@ -51,20 +51,19 @@ class semanticgan(object):
         self.real_A,self.real_B, self.real_A_sem,self.real_B_sem = tf.train.shuffle_batch([immy_a,immy_b,immy_a_sem,immy_b_sem],self.batch_size,1000,600,8)
 
         self.fake_A = self.generator(self.real_B, self.options, False, name="generatorB2A")
-        
         self.DA_fake,self.DSEM_A_fake = self.discriminator(self.fake_A, self.options, reuse=False, name="discriminatorA")
-
-        self.g_loss_b2a = self.criterionGAN(self.DA_fake, tf.ones_like(self.DA_fake)) \
-                          + self.L1_lambda * abs_criterion(self.real_A, self.fake_A)
-
         self.DA_real, self.DSEM_A_real = self.discriminator(self.real_A, self.options, reuse=True, name="discriminatorA")
-        
+
         self.dsem_loss_real =  self.criterionSem(self.DSEM_A_real,self.real_A_sem)
-        self.da_loss_real = self.criterionGAN(self.DA_real, tf.ones_like(self.DA_real))
         self.dsem_loss_fake= self.criterionSem(self.DSEM_A_fake, self.real_B_sem)
+
+        self.g_loss_b2a = (self.criterionGAN(self.DA_fake, tf.ones_like(self.DA_fake)) + self.dsem_loss_fake)/2 #+ self.L1_lambda * abs_criterion(self.real_A, self.fake_A)
+
+        
+        self.da_loss_real = self.criterionGAN(self.DA_real, tf.ones_like(self.DA_real))
         self.da_loss_fake = self.criterionGAN(self.DA_fake, tf.zeros_like(self.DA_fake)) 
         
-        self.da_loss = (self.da_loss_real  + self.dsem_loss_real + self.da_loss_fake + self.dsem_loss_fake ) / 2
+        self.da_loss = (self.da_loss_real  + self.dsem_loss_real + self.da_loss_fake + self.dsem_loss_fake ) / 4
 
         self.g_b2a_sum = tf.summary.scalar("g_loss_b2a", self.g_loss_b2a)
         self.da_loss_sum = tf.summary.scalar("da_loss", self.da_loss)
