@@ -187,8 +187,6 @@ class semanticgan(object):
 
             for idx in range(0, batch_idxs):
 
-                
-
                 # Update G network + Update D network
                 self.sess.run([self.g_b2a_optim,self.da_optim])
                 
