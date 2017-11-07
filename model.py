@@ -171,7 +171,7 @@ class semanticgan(object):
 
         tf.summary.image('pred_sem_real', tf.cast(pred_sem_real_image,tf.uint8))
         tf.summary.image('pred_sem_fake', tf.cast(pred_sem_fake_image,tf.uint8))
-        tf.summary.image('pred_sem_test',test_B_sem_image)
+        tf.summary.image('pred_sem_test',tf.cast(test_B_sem_image,tf.int32))
 
         init_op = [tf.global_variables_initializer(),tf.local_variables_initializer()]
         self.sess.run(init_op)
