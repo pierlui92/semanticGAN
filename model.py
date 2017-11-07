@@ -85,7 +85,7 @@ class semanticgan(object):
 
         self.test_B,self.test_path_b = tf.train.batch([immy_test_b,path_b],1,2,100)
         self.testA = self.generator(self.test_B, self.options, True, name="generatorB2A")
-
+        _, self.test_B_sem = self.discriminator(self.testA,self.options, True, name = 'discriminatorA')
         t_vars = tf.trainable_variables()
         self.da_vars = [var for var in t_vars if 'discriminatorA' in var.name]
         self.g_vars_b2a = [var for var in t_vars if 'generatorB2A' in var.name]
@@ -156,6 +156,10 @@ class semanticgan(object):
         tf.summary.image('B_Real',self.real_B)
         tf.summary.image('B_Real_Sem',self.real_B_sem)
         tf.summary.image('B_to_A',self.fake_A)
+        
+        tf.summary.image('testB',self.test_B)
+        tf.summary.image('testB_generated',self.testA)
+        tf.summary.image('testB_sem',self.test_B_sem)
 
         pred_sem_real_image = tf.argmax(self.DSEM_A_real, dimension=3, name="prediction")
         pred_sem_real_image = tf.expand_dims(pred_sem_real_image, dim=3)
