@@ -159,7 +159,6 @@ class semanticgan(object):
         
         tf.summary.image('testB',self.test_B)
         tf.summary.image('testB_generated',self.testA)
-        tf.summary.image('testB_sem',self.test_B_sem)
 
         pred_sem_real_image = tf.argmax(self.DSEM_A_real, dimension=3, name="prediction")
         pred_sem_real_image = tf.expand_dims(pred_sem_real_image, dim=3)
@@ -167,8 +166,12 @@ class semanticgan(object):
         pred_sem_fake_image = tf.argmax(self.DSEM_A_fake, dimension=3, name="prediction")
         pred_sem_fake_image = tf.expand_dims(pred_sem_fake_image, dim=3)
         
+        test_B_sem_image = tf.argmax(test_B_sem_image, dimension=3, name="prediction")
+        test_B_sem_image = tf.expand_dims(test_B_sem_image, dim=3)
+
         tf.summary.image('pred_sem_real', tf.cast(pred_sem_real_image,tf.uint8))
         tf.summary.image('pred_sem_fake', tf.cast(pred_sem_fake_image,tf.uint8))
+        tf.summary.image('pred_sem_test',test_B_sem_image)
 
         init_op = [tf.global_variables_initializer(),tf.local_variables_initializer()]
         self.sess.run(init_op)
