@@ -60,7 +60,7 @@ class semanticgan(object):
         self.dsem_loss_real =  self.criterionSem(self.DSEM_A_real,self.real_A_sem)
         self.dsem_loss_fake= self.criterionSem(self.DSEM_A_fake, self.real_B_sem)
 
-        self.g_loss_b2a = (self.criterionGAN(self.DA_fake, tf.ones_like(self.DA_fake)) + sem_G_fake * self.dsem_loss_fake)/2 #+ self.L1_lambda * abs_criterion(self.real_A, self.fake_A)
+        self.g_loss_b2a = (self.criterionGAN(self.DA_fake, tf.ones_like(self.DA_fake)) + self.sem_G_fake * self.dsem_loss_fake)/2 #+ self.L1_lambda * abs_criterion(self.real_A, self.fake_A)
 
         
         self.da_loss_real = self.criterionGAN(self.DA_real, tf.ones_like(self.DA_real))
