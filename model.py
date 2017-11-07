@@ -63,7 +63,7 @@ class semanticgan(object):
         self.da_loss_real = self.criterionGAN(self.DA_real, tf.ones_like(self.DA_real))
         self.da_loss_fake = self.criterionGAN(self.DA_fake, tf.zeros_like(self.DA_fake)) 
         
-        self.da_loss = (self.da_loss_real  + self.dsem_loss_real + self.da_loss_fake + self.dsem_loss_fake ) / 4
+        self.da_loss = (self.da_loss_real  + self.da_loss_fake + self.dsem_loss_real ) / 3
 
         self.g_b2a_sum = tf.summary.scalar("g_loss_b2a", self.g_loss_b2a)
         self.da_loss_sum = tf.summary.scalar("da_loss", self.da_loss)
@@ -186,6 +186,8 @@ class semanticgan(object):
             batch_idxs = args.num_sample
 
             for idx in range(0, batch_idxs):
+
+                
 
                 # Update G network + Update D network
                 self.sess.run([self.g_b2a_optim,self.da_optim])
