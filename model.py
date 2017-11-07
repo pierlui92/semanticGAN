@@ -136,7 +136,7 @@ class semanticgan(object):
             # if self.with_flip:
             #     image = tf.image.random_flip_left_right(image)
         else:
-            image = tf.image.resize_images(image,[self.image_size,self.image_size])
+            image = tf.image.resize_images(image,[self.load_size,self.load_size])
             image_sem = tf.image.resize_images(image_sem, [self.load_size,self.load_size], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
         return image,image_path,im_shape, image_sem
