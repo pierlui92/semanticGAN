@@ -28,7 +28,11 @@ parser.add_argument('--L1_lambda', dest='L1_lambda', type=float, default=10.0, h
 parser.add_argument('--use_resnet', dest='use_resnet', type=bool, default=True, help='generation network using reidule block')
 parser.add_argument('--use_lsgan', dest='use_lsgan', type=bool, default=True, help='gan loss defined in lsgan')
 parser.add_argument('--max_size', dest='max_size', type=int, default=50, help='max size of image pool, 0 means do not use image pool')
+parser.add_argument('--sem_DA_fake', dest='sem_DA_fake', type=int, default=1, help='weight loss semantic discriminator fake')
+parser.add_argument('--sem_DA_real', dest='sem_DA_real', type=int, default=1, help='weight loss semantic discriminator real')
+parser.add_argument('--sem_G_fake', dest='sem_G_fake', type=int, default=1, help='weight loss semantic generator fake')
 parser.add_argument('--job-dir',help="this argument is ignored")
+
 
 args = parser.parse_args()
 
