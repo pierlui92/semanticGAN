@@ -298,7 +298,7 @@ class semanticgan(object):
 
         print('Starting')
         batch_num=0
-        while batch_num*args.batch_size <= num_sample:
+        while batch_num*args.batch_size <= args.num_sample:
             try:
                 print('Processed images: {}'.format(batch_num*args.batch_size), end='\n')
                 pred_sem_imgs,fake_imgs,sample_images,sample_paths,im_sps, sem_gt = self.sess.run([sem_images_out,gen_images,sample_batch,path_batch,im_shapes,sample_sem_batch])
@@ -306,7 +306,6 @@ class semanticgan(object):
                 for rr in range(pred_sem_imgs.shape[0]):
                     #create output destination
                     dest_path = sample_paths[rr].decode('UTF-8').replace(self.dataset_dir,args.test_dir)
-                    print(dest_path)
                     parent_destination = os.path.abspath(os.path.join(dest_path, os.pardir))
                     if not os.path.exists(parent_destination):
                         os.makedirs(parent_destination)
