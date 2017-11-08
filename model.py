@@ -119,25 +119,28 @@ class semanticgan(object):
 
         if not is_test:
             #resize to load_size
-            image = tf.image.resize_images(image,[self.load_size,self.load_size])
-            image_sem = tf.image.resize_images(image_sem, [self.load_size,self.load_size], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+            image = tf.image.resize_images(image,[self.load_size//2,self.load_size])
+            image_sem = tf.image.resize_images(image_sem, [self.load_size//2,self.load_size], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
             #crop fine_size
 
             if(self.load_size - self.image_size != 0):
-                crop_offset_h = tf.random_uniform((), minval=0, maxval= self.load_size - self.image_size, dtype=tf.int32)
                 crop_offset_w = tf.random_uniform((), minval=0, maxval=tf.shape(image)[1] - self.image_size, dtype=tf.int32)
             else:
-                crop_offset_h = 0
                 crop_offset_w = 0
             
-            image = tf.image.crop_to_bounding_box(image, crop_offset_h, crop_offset_w, self.image_size, self.image_size)          
+            if(self.load_size//2 - self.image_size != 0):
+                crop_offset_h = tf.random_uniform((), minval=0, maxval= self.load_size - self.image_size, dtype=tf.int32)
+            else:
+                crop_offset_h = 0
+
+            image = tf.image.crop_to_bounding_box(image, crop_offset_h, crop_offset_w, self.image_size , self.image_size )          
             image_sem = tf.image.crop_to_bounding_box(image_sem, crop_offset_h, crop_offset_w, self.image_size, self.image_size)          
             #random flip left right
             # if self.with_flip:
             #     image = tf.image.random_flip_left_right(image)
         else:
-            image = tf.image.resize_images(image,[self.load_size,self.load_size])
-            image_sem = tf.image.resize_images(image_sem, [self.load_size,self.load_size], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+            image = tf.image.resize_images(image,[self.load_size//2,self.load_size])
+            image_sem = tf.image.resize_images(image_sem, [self.load_size//2,self.load_size], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
             
         return image,image_path,im_shape, image_sem
 
