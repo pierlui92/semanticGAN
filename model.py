@@ -129,7 +129,7 @@ class semanticgan(object):
                 crop_offset_w = 0
             
             if(self.load_size//2 - self.image_size != 0):
-                crop_offset_h = tf.random_uniform((), minval=0, maxval= self.load_size - self.image_size, dtype=tf.int32)
+                crop_offset_h = tf.random_uniform((), minval=0, maxval= tf.shape(image)[0]- self.image_size, dtype=tf.int32)
             else:
                 crop_offset_h = 0
 
@@ -163,18 +163,18 @@ class semanticgan(object):
         tf.summary.image('testB',self.test_B)
         tf.summary.image('testB_generated',self.testA)
 
-        pred_sem_real_image = tf.argmax(self.DSEM_A_real, dimension=3, name="prediction")
-        pred_sem_real_image = tf.expand_dims(pred_sem_real_image, dim=3)
+        self.pred_sem_real_image = tf.argmax(self.DSEM_A_real, dimension=3, name="prediction")
+        self.pred_sem_real_image = tf.expand_dims(self.pred_sem_real_image, dim=3)
 
-        pred_sem_fake_image = tf.argmax(self.DSEM_A_fake, dimension=3, name="prediction")
-        pred_sem_fake_image = tf.expand_dims(pred_sem_fake_image, dim=3)
+        self.pred_sem_fake_image = tf.argmax(self.DSEM_A_fake, dimension=3, name="prediction")
+        self.pred_sem_fake_image = tf.expand_dims(self.pred_sem_fake_image, dim=3)
         
-        test_B_sem_image = tf.argmax(self.test_B_sem, dimension=3, name="prediction")
-        test_B_sem_image = tf.expand_dims(test_B_sem_image, dim=3)
+        self.test_B_sem_image = tf.argmax(self.test_B_sem, dimension=3, name="prediction")
+        self.test_B_sem_image = tf.expand_dims(self.test_B_sem_image, dim=3)
 
-        tf.summary.image('pred_sem_real', tf.cast(pred_sem_real_image,tf.uint8))
-        tf.summary.image('pred_sem_fake', tf.cast(pred_sem_fake_image,tf.uint8))
-        tf.summary.image('pred_sem_test',tf.cast(test_B_sem_image,tf.uint8))
+        tf.summary.image('pred_sem_real', tf.cast(self.pred_sem_real_image,tf.uint8))
+        tf.summary.image('pred_sem_fake', tf.cast(self.pred_sem_fake_image,tf.uint8))
+        tf.summary.image('pred_sem_test',tf.cast(self.test_B_sem_image,tf.uint8))
 
         init_op = [tf.global_variables_initializer(),tf.local_variables_initializer()]
         self.sess.run(init_op)
@@ -268,12 +268,17 @@ class semanticgan(object):
             return False
 
     def test(self, args):
-        """Test cyclegan""" 
-        sample_op, sample_path,im_shape = self.build_input_image_op(self.dataset_dir,is_test=True,num_epochs=1)
-        sample_batch,path_batch,im_shapes = tf.train.batch([sample_op,sample_path,im_shape],batch_size=self.batch_size,num_threads=4,capacity=self.batch_size*50,allow_smaller_final_batch=True)
-        gen_name='generatorA2B' if args.which_direction=="AtoB" else 'generatorB2A'
-        cycle_image_batch = self.generator(sample_batch,self.options,name=gen_name)
-
+        """Test""" 
+        sample_op, sample_path,im_shape,sample_op_sem = self.build_input_image_op(os.path.join(self.dataset_dir,'testA'),is_test=True,num_epochs=1)
+        sample_batch,path_batch,im_shapes,sample_sem_batch = tf.train.batch([sample_op,sample_path,im_shape,sample_op_sem],batch_size=self.batch_size,num_threads=4,capacity=self.batch_size*50,allow_smaller_final_batch=True)
+        gen_name= 'generatorB2A'
+        disc_name = 'discriminatorA'
+        gen_images = self.generator(sample_batch,self.options,name=gen_name)
+        _,sem_images = self.discriminator(gen_images, self.options,name=disc_name)
+        
+        sem_images_out = tf.argmax(sem_images, dimension=3, name="prediction")
+        sem_images_out = tf.cast(tf.expand_dims(sem_images_out, dim=3),tf.uint8)
+        
         #init everything
         self.sess.run([tf.global_variables_initializer(),tf.local_variables_initializer()])
 
@@ -291,39 +296,30 @@ class semanticgan(object):
         if not os.path.exists(args.test_dir): #python 2 is dumb...
             os.makedirs(args.test_dir)
 
-        index_path = os.path.join(args.test_dir, '{0}_index.html'.format(args.which_direction))
-        index = open(index_path, "w+")
-        index.write("<html><body><table><tr>")
-        index.write("<th>name</th><th>input</th><th>output</th></tr>")
-
         print('Starting')
         batch_num=0
-        while True:
+        while batch_num*args.batch_size <= num_sample:
             try:
-                print('Processed images: {}'.format(batch_num*args.batch_size), end='\r')
-                fake_imgs,sample_images,sample_paths,im_sps = self.sess.run([cycle_image_batch,sample_batch,path_batch,im_shapes])
+                print('Processed images: {}'.format(batch_num*args.batch_size), end='\n')
+                pred_sem_imgs,fake_imgs,sample_images,sample_paths,im_sps, sem_gt = self.sess.run([sem_images_out,gen_images,sample_batch,path_batch,im_shapes,sample_sem_batch])
                 #iterate over each sample in the batch
-                for rr in range(fake_imgs.shape[0]):
+                for rr in range(pred_sem_imgs.shape[0]):
                     #create output destination
                     dest_path = sample_paths[rr].decode('UTF-8').replace(self.dataset_dir,args.test_dir)
+                    print(dest_path)
                     parent_destination = os.path.abspath(os.path.join(dest_path, os.pardir))
                     if not os.path.exists(parent_destination):
                         os.makedirs(parent_destination)
 
-                    fake_img = ((fake_imgs[rr]+1)/2)*255
                     im_sp = im_sps[rr]
-                    fake_img = misc.imresize(fake_img,(im_sp[0],im_sp[1]))
-                    misc.imsave(dest_path,fake_img)
-                    index.write("<td>%s</td>" % os.path.basename(sample_paths[rr].decode('UTF-8')))
-                    index.write("<td><img src='%s'></td>" % (sample_paths[rr].decode('UTF-8')))
-                    index.write("<td><img src='%s'></td>" % (dest_path))
-                    index.write("</tr>")
+                    pred_sem_img = misc.imresize(np.squeeze(pred_sem_imgs[rr],axis=-1),(im_sp[0],im_sp[1]))
+                    misc.imsave(dest_path,pred_sem_img)
+                    
                 batch_num+=1
             except Exception as e:
                 print(e)
                 break;
 
         print('Elaboration complete')
-        index.close()
         coord.request_stop()
         coord.join(stop_grace_period_secs=10)
