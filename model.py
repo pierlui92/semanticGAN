@@ -270,7 +270,7 @@ class semanticgan(object):
 
     def test(self, args):
         """Test""" 
-        sample_op, sample_path,im_shape,sample_op_sem = self.build_input_image_op(os.path.join(self.dataset_dir,'testA'),is_test=True,num_epochs=1)
+        sample_op, sample_path,im_shape,sample_op_sem = self.build_input_image_op(os.path.join(self.dataset_dir,'trainB'),is_test=True,num_epochs=1)
         sample_batch,path_batch,im_shapes,sample_sem_batch = tf.train.batch([sample_op,sample_path,im_shape,sample_op_sem],batch_size=self.batch_size,num_threads=4,capacity=self.batch_size*50,allow_smaller_final_batch=True)
         gen_name= 'generatorB2A'
         disc_name = 'discriminatorA'
