@@ -27,7 +27,7 @@ class semanticgan(object):
         self.sem_DA_real = args.sem_DA_real
         self.sem_G_fake = args.sem_G_fake
 
-        self.discriminator = discriminator
+        
         if args.use_resnet:
             self.generator = generator_resnet
         else:
@@ -54,8 +54,11 @@ class semanticgan(object):
         self.real_A,self.real_B, self.real_A_sem,self.real_B_sem = tf.train.shuffle_batch([immy_a,immy_b,immy_a_sem,immy_b_sem],self.batch_size,1000,600,8)
 
         self.fake_A = self.generator(self.real_B, self.options, False, name="generatorB2A")
-        self.DA_fake,self.DSEM_A_fake = self.discriminator(self.fake_A, self.options, reuse=False, name="discriminatorA")
-        self.DA_real, self.DSEM_A_real = self.discriminator(self.real_A, self.options, reuse=True, name="discriminatorA")
+        self.DA_fake=  discriminatorRealFake(self.fake_A, self.options, reuse=False, name= "discriminatorRF")
+        self.DSEM_A_fake = discriminatorSem(self.fake_A, self.options, reuse=False, name="discriminatorSem")
+
+        self.DA_real=  discriminatorRealFake(self.real_A, self.options, reuse=True, name= "discriminatorRF")
+        self.DSEM_A_real = discriminatorSem(self.real_A, self.options, reuse=True, name="discriminatorSem")
 
         self.dsem_loss_real =  self.criterionSem(self.DSEM_A_real,self.real_A_sem)
         self.dsem_loss_fake= self.criterionSem(self.DSEM_A_fake, self.real_B_sem)
@@ -85,9 +88,10 @@ class semanticgan(object):
 
         self.test_B,self.test_path_b = tf.train.batch([immy_test_b,path_b],1,2,100)
         self.testA = self.generator(self.test_B, self.options, True, name="generatorB2A")
-        _, self.test_B_sem = self.discriminator(self.testA,self.options, True, name = 'discriminatorA')
+        self.test_B_sem = discriminatorSem(self.testA,self.options, True, name = 'discriminatorSem')
+        
         t_vars = tf.trainable_variables()
-        self.da_vars = [var for var in t_vars if 'discriminatorA' in var.name]
+        self.da_vars = [var for var in t_vars if 'discriminator' in var.name]
         self.g_vars_b2a = [var for var in t_vars if 'generatorB2A' in var.name]
 
     def build_input_image_op(self,dir,is_test=False, num_epochs=None):
@@ -269,62 +273,63 @@ class semanticgan(object):
             return False
 
     def test(self, args):
-        """Test""" 
-        sample_op, sample_path,im_shape,sample_op_sem = self.build_input_image_op(os.path.join(self.dataset_dir,'trainB'),is_test=True,num_epochs=1)
-        sample_batch,path_batch,im_shapes,sample_sem_batch = tf.train.batch([sample_op,sample_path,im_shape,sample_op_sem],batch_size=self.batch_size,num_threads=4,capacity=self.batch_size*50,allow_smaller_final_batch=True)
-        gen_name= 'generatorB2A'
-        disc_name = 'discriminatorA'
-        gen_images = self.generator(sample_batch,self.options,name=gen_name)
-        _,sem_images = self.discriminator(gen_images, self.options,name=disc_name)
+        print("toImplement")
+        # """Test""" 
+        # sample_op, sample_path,im_shape,sample_op_sem = self.build_input_image_op(os.path.join(self.dataset_dir,'trainB'),is_test=True,num_epochs=1)
+        # sample_batch,path_batch,im_shapes,sample_sem_batch = tf.train.batch([sample_op,sample_path,im_shape,sample_op_sem],batch_size=self.batch_size,num_threads=4,capacity=self.batch_size*50,allow_smaller_final_batch=True)
+        # gen_name= 'generatorB2A'
+        # disc_name = 'discriminatorA'
+        # gen_images = self.generator(sample_batch,self.options,name=gen_name)
+        # _,sem_images = self.discriminator(gen_images, self.options,name=disc_name)
         
-        sem_images_out = tf.argmax(sem_images, dimension=3, name="prediction")
-        sem_images_out = tf.cast(tf.expand_dims(sem_images_out, dim=3),tf.uint8)
+        # sem_images_out = tf.argmax(sem_images, dimension=3, name="prediction")
+        # sem_images_out = tf.cast(tf.expand_dims(sem_images_out, dim=3),tf.uint8)
         
-        #init everything
-        self.sess.run([tf.global_variables_initializer(),tf.local_variables_initializer()])
+        # #init everything
+        # self.sess.run([tf.global_variables_initializer(),tf.local_variables_initializer()])
 
-        #start queue runners
-        coord = tf.train.Coordinator()
-        tf.train.start_queue_runners()
-        print('Thread running')
+        # #start queue runners
+        # coord = tf.train.Coordinator()
+        # tf.train.start_queue_runners()
+        # print('Thread running')
 
-        if self.load(args.checkpoint_dir):
-            print(" [*] Load SUCCESS")
-        else:
-            print(" [!] Load failed...")
+        # if self.load(args.checkpoint_dir):
+        #     print(" [*] Load SUCCESS")
+        # else:
+        #     print(" [!] Load failed...")
 
-        # write html for visual comparison
-        if not os.path.exists(args.test_dir): #python 2 is dumb...
-            os.makedirs(args.test_dir)
+        # # write html for visual comparison
+        # if not os.path.exists(args.test_dir): #python 2 is dumb...
+        #     os.makedirs(args.test_dir)
 
-        print('Starting')
-        batch_num=0
-        while batch_num*args.batch_size <= args.num_sample:
-            try:
-                print('Processed images: {}'.format(batch_num*args.batch_size), end='\n')
-                pred_sem_imgs,fake_imgs,sample_images,sample_paths,im_sps, sem_gt = self.sess.run([sem_images_out,gen_images,sample_batch,path_batch,im_shapes,sample_sem_batch])
-                #iterate over each sample in the batch
-                for rr in range(pred_sem_imgs.shape[0]):
-                    #create output destination
-                    dest_path = sample_paths[rr].decode('UTF-8').replace(self.dataset_dir,args.test_dir)
-                    parent_destination = os.path.abspath(os.path.join(dest_path, os.pardir))
-                    if not os.path.exists(parent_destination):
-                        os.makedirs(parent_destination)
+        # print('Starting')
+        # batch_num=0
+        # while batch_num*args.batch_size <= args.num_sample:
+        #     try:
+        #         print('Processed images: {}'.format(batch_num*args.batch_size), end='\n')
+        #         pred_sem_imgs,fake_imgs,sample_images,sample_paths,im_sps, sem_gt = self.sess.run([sem_images_out,gen_images,sample_batch,path_batch,im_shapes,sample_sem_batch])
+        #         #iterate over each sample in the batch
+        #         for rr in range(pred_sem_imgs.shape[0]):
+        #             #create output destination
+        #             dest_path = sample_paths[rr].decode('UTF-8').replace(self.dataset_dir,args.test_dir)
+        #             parent_destination = os.path.abspath(os.path.join(dest_path, os.pardir))
+        #             if not os.path.exists(parent_destination):
+        #                 os.makedirs(parent_destination)
                     
-                    im_sp = im_sps[rr]
-                    fake_img = ((fake_imgs[rr]+1)/2)*255
-                    fake_img = misc.imresize(fake_img,(im_sp[0],im_sp[1]))
-                    misc.imsave(dest_path,fake_img)
+        #             im_sp = im_sps[rr]
+        #             fake_img = ((fake_imgs[rr]+1)/2)*255
+        #             fake_img = misc.imresize(fake_img,(im_sp[0],im_sp[1]))
+        #             misc.imsave(dest_path,fake_img)
 
                     
-                    # pred_sem_img = misc.imresize(np.squeeze(pred_sem_imgs[rr],axis=-1),(im_sp[0],im_sp[1]))
-                    # misc.imsave(dest_path,pred_sem_img)
+        #             # pred_sem_img = misc.imresize(np.squeeze(pred_sem_imgs[rr],axis=-1),(im_sp[0],im_sp[1]))
+        #             # misc.imsave(dest_path,pred_sem_img)
                     
-                batch_num+=1
-            except Exception as e:
-                print(e)
-                break;
+        #         batch_num+=1
+        #     except Exception as e:
+        #         print(e)
+        #         break;
 
-        print('Elaboration complete')
-        coord.request_stop()
-        coord.join(stop_grace_period_secs=10)
+        # print('Elaboration complete')
+        # coord.request_stop()
+        # coord.join(stop_grace_period_secs=10)
