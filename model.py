@@ -194,13 +194,11 @@ class semanticgan(object):
         tf.train.start_queue_runners()
         print('Thread running')
 
-        for epoch in range(args.epoch):
+        for epoch in range(self.counter//self.num_sample, args.epoch):
             print('Start epoch: {}'.format(epoch))
             batch_idxs = args.num_sample
 
             for idx in range(0, batch_idxs):
-
-                
 
                 # Update G network + Update D network
                 self.sess.run([self.g_b2a_optim,self.da_optim])
@@ -261,7 +259,9 @@ class semanticgan(object):
 
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
         if ckpt and ckpt.model_checkpoint_path:
-            self.counter= int(ckpt.model_checkpoint_path.split(".")[-2].split("-")[-1])
+            q = ckpt.model_checkpoint_path.split("-")[-1]
+            print("Restored step: ", q)
+            self.counter= int(q) 
             savvy = tf.train.Saver(var_list=get_var_to_restore_list(ckpt.model_checkpoint_path))
             savvy.restore(self.sess, ckpt.model_checkpoint_path)
             return True
