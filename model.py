@@ -182,7 +182,7 @@ class semanticgan(object):
 
         summary_op = tf.summary.merge_all()
 
-        counter = 0
+        self.counter = 0
         start_time = time.time()
 
         if self.load(args.checkpoint_dir):
@@ -205,16 +205,16 @@ class semanticgan(object):
                 # Update G network + Update D network
                 self.sess.run([self.g_b2a_optim,self.da_optim])
                 
-                counter += 1
+                self.counter += 1
                 print(("Epoch: [%2d] [%4d/%4d] time: %4.4f" \
                        % (epoch, idx, batch_idxs, time.time() - start_time)))
 
-                if np.mod(counter, 10) == 1:
+                if np.mod(self.counter, 10) == 1:
                     summary_string = self.sess.run(summary_op)
-                    self.writer.add_summary(summary_string,counter)
+                    self.writer.add_summary(summary_string,self.counter)
 
-                if np.mod(counter, 1000) == 2:
-                    self.save(args.checkpoint_dir, counter)
+                if np.mod(self.counter, 1000) == 2:
+                    self.save(args.checkpoint_dir,self.counter)
 
         coord.request_stop()
         coord.join(stop_grace_period_secs=10)
@@ -261,6 +261,7 @@ class semanticgan(object):
 
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
         if ckpt and ckpt.model_checkpoint_path:
+            self.counter= int(ckpt.model_checkpoint_path.split(".")[-2].split("-")[-1])
             savvy = tf.train.Saver(var_list=get_var_to_restore_list(ckpt.model_checkpoint_path))
             savvy.restore(self.sess, ckpt.model_checkpoint_path)
             return True
@@ -309,10 +310,15 @@ class semanticgan(object):
                     parent_destination = os.path.abspath(os.path.join(dest_path, os.pardir))
                     if not os.path.exists(parent_destination):
                         os.makedirs(parent_destination)
-
+                    
                     im_sp = im_sps[rr]
-                    pred_sem_img = misc.imresize(np.squeeze(pred_sem_imgs[rr],axis=-1),(im_sp[0],im_sp[1]))
-                    misc.imsave(dest_path,pred_sem_img)
+                    fake_img = ((fake_imgs[rr]+1)/2)*255
+                    fake_img = misc.imresize(fake_img,(im_sp[0],im_sp[1]))
+                    misc.imsave(dest_path,fake_img)
+
+                    
+                    # pred_sem_img = misc.imresize(np.squeeze(pred_sem_imgs[rr],axis=-1),(im_sp[0],im_sp[1]))
+                    # misc.imsave(dest_path,pred_sem_img)
                     
                 batch_num+=1
             except Exception as e:

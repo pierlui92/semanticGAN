@@ -23,7 +23,7 @@ parser.add_argument('--flip', dest='flip', type=bool, default=True, help='if fli
 parser.add_argument('--which_direction', dest='which_direction', default='AtoB', help='AtoB or BtoA',choices=['AtoB','BtoA'])
 parser.add_argument('--phase', dest='phase', help='train, test', required=True, choices=['train','test'])
 parser.add_argument('--checkpoint_dir', dest='checkpoint_dir', default='./checkpoint', help='models are saved here')
-parser.add_argument('--test_dir', dest='test_dir', default='./test', help='test sample are saved here')
+parser.add_argument('--test_dir', dest='test_dir', default='./testOut', help='test sample are saved here')
 parser.add_argument('--L1_lambda', dest='L1_lambda', type=float, default=10.0, help='weight on L1 term in objective')
 parser.add_argument('--use_resnet', dest='use_resnet', type=bool, default=True, help='generation network using reidule block')
 parser.add_argument('--use_lsgan', dest='use_lsgan', type=bool, default=True, help='gan loss defined in lsgan')
