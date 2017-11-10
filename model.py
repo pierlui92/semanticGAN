@@ -84,11 +84,13 @@ class semanticgan(object):
             [self.da_loss_sum, self.da_loss_real_sum, self.dsmea_loss_real_sum,  self.da_loss_fake_sum, self.dsmea_loss_fake_sum]
         )
 
-        immy_test_b,path_b,_,_ = self.build_input_image_op(os.path.join(self.dataset_dir,'testB'),True)
+        immy_test_b,path_b,_,immy_test_b_sem = self.build_input_image_op(os.path.join(self.dataset_dir,'testB'),True)
 
-        self.test_B,self.test_path_b = tf.train.batch([immy_test_b,path_b],1,2,100)
+        self.test_B,self.test_path_b, self.test_B_sem_gt = tf.train.batch([immy_test_b,path_b,self.test_B_sem_gt],1,2,100)
         self.testA = self.generator(self.test_B, self.options, True, name="generatorB2A")
         self.test_B_sem = discriminatorSem(self.testA,self.options, True, name = 'discriminatorSem')
+        self.dsem_test_loss = self.criterionSem(self.test_B_sem,self.test_B_sem_gt)
+        self.dsem_test_loss_sum = tf.summary.scalar("dsem_val_loss", self.dsem_test_loss)
         
         t_vars = tf.trainable_variables()
         self.da_vars = [var for var in t_vars if 'discriminator' in var.name]
