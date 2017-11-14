@@ -143,7 +143,7 @@ def discriminator(image, options, reuse=False, name="discriminator"):
         d7 = tf.concat([instance_norm(d7, 'g_bn_d7'), e1], 3)
         # d7 is (128 x 128 x self.gf_dim*1*2)
 
-        d8 = deconv2d(tf.nn.relu(d7), 34 , name='g_d8')
+        d8 = deconv2d(tf.nn.relu(d7), 35 , name='g_d8')
         # d8 is (256 x 256 x 1)
 
         return o1, d8

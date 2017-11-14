@@ -21,11 +21,20 @@ class semanticgan(object):
         self.dataset_dir = args.dataset_dir
         self.with_flip=args.flip
         self.dataset_name=self.dataset_dir.split('/')[-1]
-        self.num_sample = args.num_sample
-        self.num_epochs = args.epoch
+        self.dataset_dim = args.dataset_dim
+        self.num_step = args.step
         self.sem_DA_fake = args.sem_DA_fake
         self.sem_DA_real = args.sem_DA_real
         self.sem_G_fake = args.sem_G_fake
+
+        self.trainA = args.trainA
+        self.trainASem = args.trainASem
+        self.trainB = args.trainB
+        self.trainBSem = args.trainBSem
+        self.testA = args.testASem
+        self.testASem = args.testASem
+        self.testB = args.testB
+        self.testBSem = args.testBSem
 
         self.discriminator = discriminator
         if args.use_resnet:
@@ -48,10 +57,10 @@ class semanticgan(object):
             self.saver = tf.train.Saver(max_to_keep=2)
 
     def _build_model(self):
-        immy_a,_ ,_,immy_a_sem= self.build_input_image_op(os.path.join(self.dataset_dir,'trainA'),False)
-        immy_b,_ ,_,immy_b_sem= self.build_input_image_op(os.path.join(self.dataset_dir,'trainB'),False)
+        immy_a,_ ,_,immy_a_sem= self.build_input_image_op(self.trainA, self.trainASem,False)
+        immy_b,_ ,_,immy_b_sem= self.build_input_image_op(self.trainB, self.trainBSem,False)
 
-        self.real_A,self.real_B, self.real_A_sem,self.real_B_sem = tf.train.shuffle_batch([immy_a,immy_b,immy_a_sem,immy_b_sem],self.batch_size,1000,600,8)
+        self.real_A,self.real_B, self.real_A_sem,self.real_B_sem = tf.train.shuffle_batch([immy_a,immy_b,immy_a_sem,immy_b_sem],self.batch_size,150,30,8)
 
         self.fake_A = self.generator(self.real_B, self.options, False, name="generatorB2A")
         self.DA_fake,self.DSEM_A_fake = self.discriminator(self.fake_A, self.options, reuse=False, name="discriminatorA")
@@ -81,16 +90,17 @@ class semanticgan(object):
             [self.da_loss_sum, self.da_loss_real_sum, self.dsmea_loss_real_sum,  self.da_loss_fake_sum, self.dsmea_loss_fake_sum]
         )
 
-        immy_test_b,path_b,_,_ = self.build_input_image_op(os.path.join(self.dataset_dir,'testB'),True)
+        immy_test_b,path_b,_,_ = self.build_input_image_op(self.testB,self.testBSem, True)
 
         self.test_B,self.test_path_b = tf.train.batch([immy_test_b,path_b],1,2,100)
         self.testA = self.generator(self.test_B, self.options, True, name="generatorB2A")
         _, self.test_B_sem = self.discriminator(self.testA,self.options, True, name = 'discriminatorA')
+        
         t_vars = tf.trainable_variables()
         self.da_vars = [var for var in t_vars if 'discriminatorA' in var.name]
         self.g_vars_b2a = [var for var in t_vars if 'generatorB2A' in var.name]
 
-    def build_input_image_op(self,dir,is_test=False, num_epochs=None):
+    def build_input_image_op(self,dir, dirSem, is_test=False):
         def _parse_function(image_tensor):
             image = tf.read_file(image_tensor[0])
             image_sem = tf.read_file(image_tensor[1])
@@ -101,12 +111,13 @@ class semanticgan(object):
             return image , image_tensor[0], image_sem
 
         samples = [os.path.join(dir, s) for s in os.listdir(dir)]
-        samples_sem = [os.path.join(dir+ "Sem",s.split("/")[-1]) for s in samples]
+        samples_sem = [s.replace(dir, dirSem) for s in samples]
+
         image_tensor = tf.constant(np.stack((samples, samples_sem), axis = -1))
 
         dataset = tf.contrib.data.Dataset.from_tensor_slices(image_tensor)
         dataset = dataset.map(_parse_function)
-        num_iteration = int(self.num_sample/len(samples)*self.num_epochs)
+        num_iteration = self.num_step
         dataset = dataset.repeat(num_iteration)
         iterator = dataset.make_one_shot_iterator()
         image , image_path, image_sem = iterator.get_next()
@@ -154,36 +165,40 @@ class semanticgan(object):
         image_summaries = []
 
         #summaries for training
-        tf.summary.image('A_Real',self.real_A)
-        tf.summary.image('A_Real_Sem',self.real_A_sem)
-        tf.summary.image('B_Real',self.real_B)
-        tf.summary.image('B_Real_Sem',self.real_B_sem)
+        tf.summary.image('train_A',self.real_A)
+        tf.summary.image('train_A_Sem',self.real_A_sem)
+        
+        tf.summary.image('train_B',self.real_B)
+        tf.summary.image('train_B_Sem',self.real_B_sem)
+        
         tf.summary.image('B_to_A',self.fake_A)
         
-        tf.summary.image('testB',self.test_B)
-        tf.summary.image('testB_generated',self.testA)
-
         self.pred_sem_real_image = tf.argmax(self.DSEM_A_real, dimension=3, name="prediction")
         self.pred_sem_real_image = tf.expand_dims(self.pred_sem_real_image, dim=3)
 
         self.pred_sem_fake_image = tf.argmax(self.DSEM_A_fake, dimension=3, name="prediction")
         self.pred_sem_fake_image = tf.expand_dims(self.pred_sem_fake_image, dim=3)
+
+        tf.summary.image('pred_sem_A', tf.cast(self.pred_sem_real_image,tf.uint8))
+        tf.summary.image('pred_sem_B', tf.cast(self.pred_sem_fake_image,tf.uint8))
+
+        tf.summary.image('test_B',self.test_B)
+        tf.summary.image('test_B_to_A',self.testA)
         
         self.test_B_sem_image = tf.argmax(self.test_B_sem, dimension=3, name="prediction")
         self.test_B_sem_image = tf.expand_dims(self.test_B_sem_image, dim=3)
-
-        tf.summary.image('pred_sem_real', tf.cast(self.pred_sem_real_image,tf.uint8))
-        tf.summary.image('pred_sem_fake', tf.cast(self.pred_sem_fake_image,tf.uint8))
-        tf.summary.image('pred_sem_test',tf.cast(self.test_B_sem_image,tf.uint8))
+     
+        tf.summary.image('pred_sem_test_B',tf.cast(self.test_B_sem_image,tf.uint8))
 
         init_op = [tf.global_variables_initializer(),tf.local_variables_initializer()]
+        
         self.sess.run(init_op)
         self.writer = tf.summary.FileWriter(args.checkpoint_dir, self.sess.graph)
 
         summary_op = tf.summary.merge_all()
 
         self.counter = 0
-        start_time = time.time()
+        
 
         if self.load(args.checkpoint_dir):
             print(" [*] Load SUCCESS")
@@ -194,31 +209,30 @@ class semanticgan(object):
         tf.train.start_queue_runners()
         print('Thread running')
 
-        for epoch in range(self.counter//self.num_sample, args.epoch):
-            print('Start epoch: {}'.format(epoch))
-            batch_idxs = args.num_sample
+        print('Start step: {}'.format(self.counter))
 
-            for idx in range(0, batch_idxs):
+        for idx in range(self.counter, self.num_step):
+            self.counter += 1
+            start_time = time.time()
 
-                # Update G network + Update D network
-                self.sess.run([self.g_b2a_optim,self.da_optim])
-                
-                self.counter += 1
-                print(("Epoch: [%2d] [%4d/%4d] time: %4.4f" \
-                       % (epoch, idx, batch_idxs, time.time() - start_time)))
+            # Update G network + Update D network
+            lossG, lossD, _,_ = self.sess.run([self.g_loss_b2a,self.da_loss, self.g_b2a_optim,self.da_optim])
 
-                if np.mod(self.counter, 10) == 1:
-                    summary_string = self.sess.run(summary_op)
-                    self.writer.add_summary(summary_string,self.counter)
+            print(("Step: [%4d/%4d], LossG: %.3f, LossD: %.3f Time batch: %4.4f" \
+                    % (idx, self.num_step, lossG, lossD, time.time() - start_time)))
 
-                if np.mod(self.counter, 1000) == 2:
-                    self.save(args.checkpoint_dir,self.counter)
+            if np.mod(self.counter, 200) == 1:
+                summary_string = self.sess.run(summary_op)
+                self.writer.add_summary(summary_string,self.counter)
+
+            if np.mod(self.counter, 1000) == 2:
+                self.save(args.checkpoint_dir,self.counter)
 
         coord.request_stop()
         coord.join(stop_grace_period_secs=10)
 
     def save(self, checkpoint_dir, step):
-        model_name = "%s_%s" % (self.dataset_name, self.image_size)
+        model_name = "semanticGAN"
 
         self.saver.save(self.sess,
                         os.path.join(checkpoint_dir, model_name),
@@ -270,16 +284,15 @@ class semanticgan(object):
 
     def test(self, args):
         """Test""" 
-        sample_op, sample_path,im_shape,sample_op_sem = self.build_input_image_op(os.path.join(self.dataset_dir,'trainB'),is_test=True,num_epochs=1)
+        sample_op, sample_path,im_shape,sample_op_sem = self.build_input_image_op(self.testB ,is_test=True)
         sample_batch,path_batch,im_shapes,sample_sem_batch = tf.train.batch([sample_op,sample_path,im_shape,sample_op_sem],batch_size=self.batch_size,num_threads=4,capacity=self.batch_size*50,allow_smaller_final_batch=True)
-        gen_name= 'generatorB2A'
-        disc_name = 'discriminatorA'
-        gen_images = self.generator(sample_batch,self.options,name=gen_name)
-        _,sem_images = self.discriminator(gen_images, self.options,name=disc_name)
+
+        gen_images = self.generator(sample_batch,self.options,name='generatorB2A') 
+        _,sem_images = self.discriminator(gen_images, self.options,name='discriminatorA')
         
         sem_images_out = tf.argmax(sem_images, dimension=3, name="prediction")
         sem_images_out = tf.cast(tf.expand_dims(sem_images_out, dim=3),tf.uint8)
-        
+
         #init everything
         self.sess.run([tf.global_variables_initializer(),tf.local_variables_initializer()])
 
@@ -293,15 +306,13 @@ class semanticgan(object):
         else:
             print(" [!] Load failed...")
 
-        # write html for visual comparison
         if not os.path.exists(args.test_dir): #python 2 is dumb...
             os.makedirs(args.test_dir)
 
         print('Starting')
-        batch_num=0
-        while batch_num*args.batch_size <= args.num_sample:
+        for count in range(0, args.dataset_dim//self.batch_size):
             try:
-                print('Processed images: {}'.format(batch_num*args.batch_size), end='\n')
+                print('Processed images: [%d/%d]' % (count,args.dataset_dim // self.batch_size), end='\n')
                 pred_sem_imgs,fake_imgs,sample_images,sample_paths,im_sps, sem_gt = self.sess.run([sem_images_out,gen_images,sample_batch,path_batch,im_shapes,sample_sem_batch])
                 #iterate over each sample in the batch
                 for rr in range(pred_sem_imgs.shape[0]):
@@ -312,15 +323,15 @@ class semanticgan(object):
                         os.makedirs(parent_destination)
                     
                     im_sp = im_sps[rr]
-                    fake_img = ((fake_imgs[rr]+1)/2)*255
-                    fake_img = misc.imresize(fake_img,(im_sp[0],im_sp[1]))
-                    misc.imsave(dest_path,fake_img)
 
-                    
-                    # pred_sem_img = misc.imresize(np.squeeze(pred_sem_imgs[rr],axis=-1),(im_sp[0],im_sp[1]))
-                    # misc.imsave(dest_path,pred_sem_img)
-                    
-                batch_num+=1
+                    if(not args.Sog):
+                        fake_img = ((fake_imgs[rr]+1)/2)*255
+                        fake_img = misc.imresize(fake_img,(im_sp[0],im_sp[1]))
+                        misc.imsave(dest_path,fake_img)
+                    else:
+                        pred_sem_img = misc.imresize(np.squeeze(pred_sem_imgs[rr],axis=-1),(im_sp[0],im_sp[1]))
+                        misc.imsave(dest_path,pred_sem_img)
+                count+=1
             except Exception as e:
                 print(e)
                 break;
