@@ -23,6 +23,10 @@ class semanticgan(object):
         self.dataset_name=self.dataset_dir.split('/')[-1]
         self.dataset_dim = args.dataset_dim
         self.num_step = args.step
+
+        self.G = args.G
+        self.DR = args.DR
+        self.DF = args.DF
         self.sem_DA_fake = args.sem_DA_fake
         self.sem_DA_real = args.sem_DA_real
         self.sem_G_fake = args.sem_G_fake
@@ -31,7 +35,7 @@ class semanticgan(object):
         self.trainASem = args.trainASem
         self.trainB = args.trainB
         self.trainBSem = args.trainBSem
-        self.testA = args.testASem
+        self.testA = args.testA
         self.testASem = args.testASem
         self.testB = args.testB
         self.testBSem = args.testBSem
@@ -69,11 +73,10 @@ class semanticgan(object):
         self.dsem_loss_real =  self.criterionSem(self.DSEM_A_real,self.real_A_sem)
         self.dsem_loss_fake= self.criterionSem(self.DSEM_A_fake, self.real_B_sem)
 
-        self.g_loss_b2a = (self.criterionGAN(self.DA_fake, tf.ones_like(self.DA_fake)) + self.sem_G_fake * self.dsem_loss_fake)/2 #+ self.L1_lambda * abs_criterion(self.real_A, self.fake_A)
-
+        self.g_loss_b2a = (self.G * self.criterionGAN(self.DA_fake, tf.ones_like(self.DA_fake)) + self.sem_G_fake * self.dsem_loss_fake)/2 #+ self.L1_lambda * abs_criterion(self.real_A, self.fake_A)
         
-        self.da_loss_real = self.criterionGAN(self.DA_real, tf.ones_like(self.DA_real))
-        self.da_loss_fake = self.criterionGAN(self.DA_fake, tf.zeros_like(self.DA_fake)) 
+        self.da_loss_real = self.DR * self.criterionGAN(self.DA_real, tf.ones_like(self.DA_real))
+        self.da_loss_fake = self.DF * self.criterionGAN(self.DA_fake, tf.zeros_like(self.DA_fake)) 
         
         self.da_loss = (self.da_loss_real  + self.sem_DA_real * self.dsem_loss_real + self.da_loss_fake + self.sem_DA_fake * self.dsem_loss_fake ) / 4
 

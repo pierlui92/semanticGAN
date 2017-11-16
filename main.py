@@ -35,12 +35,16 @@ parser.add_argument('--max_size', dest='max_size', type=int, default=50, help='m
 parser.add_argument('--sem_DA_fake', dest='sem_DA_fake', type=int, default=1, help='weight loss semantic discriminator fake')
 parser.add_argument('--sem_DA_real', dest='sem_DA_real', type=int, default=1, help='weight loss semantic discriminator real')
 parser.add_argument('--sem_G_fake', dest='sem_G_fake', type=int, default=1, help='weight loss semantic generator fake')
+parser.add_argument('--G', dest='G', type=int, default=1, help='weight loss GAN generator')
+parser.add_argument('--DR', dest='DR', type=int, default=1, help='weight loss GAN discriminator real')
+parser.add_argument('--DF', dest='DF', type=int, default=1, help='weight loss GAN discriminator fake')
+
 
 parser.add_argument('--trainA', dest='trainA', default='./trainA', help='domain A train folder')
 parser.add_argument('--trainASem', dest='trainASem', default='./trainASem', help='semantic map domain A train folder')
 parser.add_argument('--trainB', dest='trainB', default='./trainB', help='domain B train folder')
 parser.add_argument('--trainBSem', dest='trainBSem', default='./trainBSem', help='semantic map domain B train folder')
-parser.add_argument('--testA', dest='trainBSem', default='./testA', help='domain A test folder')
+parser.add_argument('--testA', dest='testA', default='./testA', help='domain A test folder')
 parser.add_argument('--testASem', dest='testASem', default='./testASem', help='semantic map domain A test folder')
 parser.add_argument('--testB', dest='testB', default='./testB', help='domain B test folder')
 parser.add_argument('--testBSem', dest='testBSem', default='./testBSem', help='semantic map domain B test folder')
