@@ -287,7 +287,7 @@ class semanticgan(object):
 
     def test(self, args):
         """Test""" 
-        sample_op, sample_path,im_shape,sample_op_sem = self.build_input_image_op(self.testB ,is_test=True)
+        sample_op, sample_path,im_shape,sample_op_sem = self.build_input_image_op(self.testB ,self.testBSem,is_test=True)
         sample_batch,path_batch,im_shapes,sample_sem_batch = tf.train.batch([sample_op,sample_path,im_shape,sample_op_sem],batch_size=self.batch_size,num_threads=4,capacity=self.batch_size*50,allow_smaller_final_batch=True)
 
         gen_images = self.generator(sample_batch,self.options,name='generatorB2A') 
@@ -320,14 +320,14 @@ class semanticgan(object):
                 #iterate over each sample in the batch
                 for rr in range(pred_sem_imgs.shape[0]):
                     #create output destination
-                    dest_path = sample_paths[rr].decode('UTF-8').replace(self.dataset_dir,args.test_dir)
+                    dest_path = sample_paths[rr].decode('UTF-8').replace(self.testB,args.test_dir)
                     parent_destination = os.path.abspath(os.path.join(dest_path, os.pardir))
                     if not os.path.exists(parent_destination):
                         os.makedirs(parent_destination)
                     
                     im_sp = im_sps[rr]
 
-                    if(not args.Sog):
+                    if(not args.SoG):
                         fake_img = ((fake_imgs[rr]+1)/2)*255
                         fake_img = misc.imresize(fake_img,(im_sp[0],im_sp[1]))
                         misc.imsave(dest_path,fake_img)

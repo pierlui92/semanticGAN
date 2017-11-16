@@ -24,8 +24,8 @@ parser.add_argument('--which_direction', dest='which_direction', default='AtoB',
 parser.add_argument('--phase', dest='phase', help='train, test', required=True, choices=['train','test'])
 parser.add_argument('--checkpoint_dir', dest='checkpoint_dir', default='./checkpoint', help='models are saved here')
 
-parser.add_argument('--test_dir', dest='test_dir', default='./testOut', help='output folder of phase test')
-parser.add_argument('--test_semantic_or_generator', dest='SoG', type=bool, default=True, help='if True semantic segmentation otherwise generation')
+parser.add_argument('--test_dir', dest='test_dir', default='./testOut/', help='output folder of phase test')
+parser.add_argument('--SoG', dest='SoG', default=True, action='store_false' ,help='if True semantic segmentation otherwise generation')
 
 parser.add_argument('--L1_lambda', dest='L1_lambda', type=float, default=10.0, help='weight on L1 term in objective')
 parser.add_argument('--use_resnet', dest='use_resnet', type=bool, default=True, help='generation network using reidule block')
@@ -57,7 +57,7 @@ args = parser.parse_args()
 def main(_):
     if not os.path.exists(args.checkpoint_dir):
         os.makedirs(args.checkpoint_dir)
-
+    print(type(args.SoG), args.SoG)
     with tf.Session() as sess:
         model = semanticgan(sess, args)
         if args.phase == 'train':
