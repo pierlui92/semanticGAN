@@ -30,6 +30,7 @@ class semanticgan(object):
         self.sem_DA_fake = args.sem_DA_fake
         self.sem_DA_real = args.sem_DA_real
         self.sem_G_fake = args.sem_G_fake
+        self.sem_DA_fake_adversarial=  args.sem_DA_fake_adversarial
 
         self.trainA = args.trainA
         self.trainASem = args.trainASem
@@ -69,10 +70,13 @@ class semanticgan(object):
         self.fake_A = self.generator(self.real_B, self.options, False, name="generatorB2A")
         self.DA_fake,self.DSEM_A_fake = self.discriminator(self.fake_A, self.options, reuse=False, name="discriminatorA")
         self.DA_real, self.DSEM_A_real = self.discriminator(self.real_A, self.options, reuse=True, name="discriminatorA")
+        
+        self.DSEM_A_fake = tf.Print(self.DSEM_A_fake,[tf.shape(self.DSEM_A_fake)])
 
         self.dsem_loss_real =  self.criterionSem(self.DSEM_A_real,self.real_A_sem)
         self.dsem_loss_fake= self.criterionSem(self.DSEM_A_fake, self.real_B_sem)
 
+        self.dsem_loss_fake_adversarial = tf.nn.sigmoid_cross_entropy_with_logits(logits=DSEM_A_fake,labels=tf.ones_like(DSEM_A_fake)*1/35)
         self.g_loss_b2a = (self.G * self.criterionGAN(self.DA_fake, tf.ones_like(self.DA_fake)) + self.sem_G_fake * self.dsem_loss_fake)/2 #+ self.L1_lambda * abs_criterion(self.real_A, self.fake_A)
         
         self.da_loss_real = self.DR * self.criterionGAN(self.DA_real, tf.ones_like(self.DA_real))
