@@ -71,7 +71,7 @@ class semanticgan(object):
         self.DA_fake,self.DSEM_A_fake = self.discriminator(self.fake_A, self.options, reuse=False, name="discriminatorA")
         self.DA_real, self.DSEM_A_real = self.discriminator(self.real_A, self.options, reuse=True, name="discriminatorA")
         
-        self.DSEM_A_fake = tf.Print(self.DSEM_A_fake,[tf.shape(self.DSEM_A_fake)])
+        self.DSEM_A_fake = tf.Print(self.DSEM_A_fake,[tf.shape(self.DSEM_A_fake)[-1]])
 
         self.dsem_loss_real =  self.criterionSem(self.DSEM_A_real,self.real_A_sem)
         self.dsem_loss_fake= self.criterionSem(self.DSEM_A_fake, self.real_B_sem)
@@ -92,9 +92,11 @@ class semanticgan(object):
         
         self.da_loss_fake_sum = tf.summary.scalar("da_loss_fake", self.da_loss_fake)
         self.dsmea_loss_fake_sum = tf.summary.scalar("dsema_loss_fake",self.dsem_loss_fake)
+        self.dsema_loss_fake_ad_sum = tf.summary.scalar("dsema_loss_fake_ad",self.dsem_loss_fake_adversarial)
+
 
         self.da_sum = tf.summary.merge(
-            [self.da_loss_sum, self.da_loss_real_sum, self.dsmea_loss_real_sum,  self.da_loss_fake_sum, self.dsmea_loss_fake_sum]
+            [self.da_loss_sum, self.da_loss_real_sum, self.dsmea_loss_real_sum,  self.da_loss_fake_sum, self.dsmea_loss_fake_sum, self.dsema_loss_fake_ad_sum]
         )
 
         immy_test_b,path_b,_,_ = self.build_input_image_op(self.testB,self.testBSem, True)
