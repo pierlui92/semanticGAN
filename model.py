@@ -71,8 +71,6 @@ class semanticgan(object):
         self.DA_fake,self.DSEM_A_fake = self.discriminator(self.fake_A, self.options, reuse=False, name="discriminatorA")
         self.DA_real, self.DSEM_A_real = self.discriminator(self.real_A, self.options, reuse=True, name="discriminatorA")
         
-        self.DSEM_A_fake = tf.Print(self.DSEM_A_fake,[tf.shape(self.DSEM_A_fake)[-1]])
-
         self.dsem_loss_real =  self.criterionSem(self.DSEM_A_real,self.real_A_sem)
         self.dsem_loss_fake= self.criterionSem(self.DSEM_A_fake, self.real_B_sem)
         self.dsem_loss_fake_adversarial = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.DSEM_A_fake,labels=tf.ones_like(self.DSEM_A_fake)*1/35))
