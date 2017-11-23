@@ -39,7 +39,7 @@ parser.add_argument('--sem_G_fake', dest='sem_G_fake', type=int, default=1, help
 parser.add_argument('--G', dest='G', type=int, default=1, help='weight loss GAN generator')
 parser.add_argument('--DR', dest='DR', type=int, default=1, help='weight loss GAN discriminator real')
 parser.add_argument('--DF', dest='DF', type=int, default=1, help='weight loss GAN discriminator fake')
-
+parser.add_argument('--ssim_G', dest='ssim_G', type=int, default=1, help='weight loss generator ssim')
 
 parser.add_argument('--trainA', dest='trainA', default='./trainA', help='domain A train folder')
 parser.add_argument('--trainASem', dest='trainASem', default='./trainASem', help='semantic map domain A train folder')

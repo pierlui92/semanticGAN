@@ -270,3 +270,24 @@ def sce_criterion(logits, labels):
 def sem_criterion(logits,labels):
     labels = tf.cast(labels,tf.int32)
     return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=tf.squeeze(labels, axis=3)))
+
+def SSIM(x, y):
+    C1 = 0.01**2
+    C2 = 0.03**2
+    mu_x = slim.avg_pool2d(x, 3, 1, 'VALID')
+    mu_y = slim.avg_pool2d(y, 3, 1, 'VALID')
+    
+    sigma_x = slim.avg_pool2d(x**2, 3, 1, 'VALID') - mu_x**2
+    sigma_y = slim.avg_pool2d(y**2, 3, 1, 'VALID') - mu_y**2
+    sigma_xy = slim.avg_pool2d(x*y, 3, 1, 'VALID') - mu_x * mu_y
+
+    SSIM_n = (2 * mu_x * mu_y + C1) * (2 * sigma_xy + C2)
+    SSIM_d = (mu_x ** 2 + mu_y ** 2 + C1) * (sigma_x + sigma_y + C2)
+
+    SSIM = SSIM_n / SSIM_d
+
+return tf.clip_by_value((1-SSIM)/2, 0 ,1)
+
+def ssim_criterion(x,y,a=0.85):
+    SSIMmap = SSIM(x,y)
+    return tf.reduce_mean(SSIMmap)*a  + (1-a)*abs_criterion(x,y) 

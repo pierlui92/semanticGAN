@@ -30,6 +30,7 @@ class semanticgan(object):
         self.sem_DA_fake = args.sem_DA_fake
         self.sem_DA_real = args.sem_DA_real
         self.sem_G_fake = args.sem_G_fake
+        self.ssim_G = args.ssim_G
         self.sem_DA_fake_adversarial=  args.sem_DA_fake_adversarial
 
         self.trainA = args.trainA
@@ -75,7 +76,8 @@ class semanticgan(object):
         self.dsem_loss_fake= self.criterionSem(self.DSEM_A_fake, self.real_B_sem)
         self.dsem_loss_fake_adversarial = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.DSEM_A_fake,labels=tf.ones_like(self.DSEM_A_fake)*1/35))
 
-        self.g_loss_b2a = (self.G * self.criterionGAN(self.DA_fake, tf.ones_like(self.DA_fake)) + self.sem_G_fake * self.dsem_loss_fake)/2 #+ self.L1_lambda * abs_criterion(self.real_A, self.fake_A)
+        self.g_ssim_loss = ssim_criterion(self.fake_A,self.real_B)
+        self.g_loss_b2a = (self.G * self.criterionGAN(self.DA_fake, tf.ones_like(self.DA_fake)) + self.sem_G_fake * self.dsem_loss_fake + self.ssim_G* self.g_ssim_loss)/2 #+ self.L1_lambda * abs_criterion(self.real_A, self.fake_A)
         
         self.da_loss_real = self.DR * self.criterionGAN(self.DA_real, tf.ones_like(self.DA_real))
         self.da_loss_fake = self.DF * self.criterionGAN(self.DA_fake, tf.zeros_like(self.DA_fake)) 
@@ -92,9 +94,10 @@ class semanticgan(object):
         self.dsmea_loss_fake_sum = tf.summary.scalar("dsema_loss_fake",self.dsem_loss_fake)
         self.dsema_loss_fake_ad_sum = tf.summary.scalar("dsema_loss_fake_ad",self.dsem_loss_fake_adversarial)
 
+        self.g_ssim_loss_sum =tf.summary.scalar("ssmi_g_loss",self.g_ssim_loss)
 
         self.da_sum = tf.summary.merge(
-            [self.da_loss_sum, self.da_loss_real_sum, self.dsmea_loss_real_sum,  self.da_loss_fake_sum, self.dsmea_loss_fake_sum, self.dsema_loss_fake_ad_sum]
+            [self.da_loss_sum, self.da_loss_real_sum, self.dsmea_loss_real_sum,  self.da_loss_fake_sum, self.dsmea_loss_fake_sum, self.dsema_loss_fake_ad_sum,self.g_ssim_loss_sum]
         )
 
         immy_test_b,path_b,_,_ = self.build_input_image_op(self.testB,self.testBSem, True)
