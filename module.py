@@ -286,7 +286,7 @@ def SSIM(x, y):
 
     SSIM = SSIM_n / SSIM_d
 
-return tf.clip_by_value((1-SSIM)/2, 0 ,1)
+    return tf.clip_by_value((1-SSIM)/2, 0 ,1)
 
 def ssim_criterion(x,y,a=0.85):
     SSIMmap = SSIM(x,y)
