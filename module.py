@@ -143,7 +143,7 @@ def discriminator(image, options, reuse=False, name="discriminator"):
         d7 = tf.concat([instance_norm(d7, 'g_bn_d7'), e1], 3)
         # d7 is (128 x 128 x self.gf_dim*1*2)
 
-        d8 = deconv2d(tf.nn.relu(d7), 35 , name='g_d8')
+        d8 = deconv2d(tf.nn.relu(d7), 19 , name='g_d8')
         # d8 is (256 x 256 x 1)
 
         return o1, d8
@@ -268,8 +268,13 @@ def sce_criterion(logits, labels):
     return tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=labels))
 
 def sem_criterion(logits,labels):
+    labels = tf.squeeze(labels, axis=3)
+    mask = tf.cast(tf.where(tf.equal(labels,tf.ones_like(labels)* 255), tf.zeros_like(labels), tf.ones_like(labels)),tf.float32)
+    labels = tf.where(tf.equal(labels ,tf.ones_like(labels)* 255), tf.zeros_like(labels), labels)
     labels = tf.cast(labels,tf.int32)
-    return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=tf.squeeze(labels, axis=3)))
+    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=labels)
+    loss = tf.multiply(loss, mask)
+    return tf.reduce_mean(loss)
 
 def SSIM(x, y):
     C1 = 0.01**2
